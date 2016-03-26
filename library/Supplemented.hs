@@ -13,6 +13,14 @@ import Supplemented.Prelude
   forall p1 p2.
     essence p1 *> supplement p2 =
       essenceAndSupplement (p1 $> ()) p2
+"*>/supplement" [~2]
+  forall p pp.
+    pp *> supplement p =
+      mapSupplement (*> p) pp $> ()
+"<*/supplement" [~2]
+  forall p pp.
+    pp <* supplement p =
+      mapSupplement (*> p) pp
   #-}
 
 
@@ -78,3 +86,8 @@ supplement supplement =
 essenceAndSupplement :: Monad m => m a -> m () -> Supplemented m a
 essenceAndSupplement essence supplement =
   Supplemented (fmap (\r -> (r, supplement)) essence)
+
+{-# INLINE [2] mapSupplement #-}
+mapSupplement :: Monad m => (m () -> m ()) -> Supplemented m a -> Supplemented m a
+mapSupplement mapping (Supplemented m) =
+  Supplemented ((fmap . fmap) mapping m)
