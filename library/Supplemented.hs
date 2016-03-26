@@ -8,79 +8,53 @@ import Supplemented.Prelude
 "essence/supplement/<*" [~2]
   forall p1 p2.
     essence p1 <* supplement p2 =
-      Supplemented p1 p2
+      essenceAndSupplement p1 p2
 "essence/supplement/*>" [~2]
   forall p1 p2.
     essence p1 *> supplement p2 =
-      Supplemented (p1 $> ()) p2
-"essence/*>" [~2]
-  forall parser main. 
-    essence parser *> main =
-      mapEssence (parser *>) main
-"essence/<*" [~2]
-  forall parser main. 
-    essence parser <* main =
-      mapEssence (parser <*) main
-"mapSupplement/mapEssence" [~2]
-  forall essenceFn supplementFn partialParser. 
-    mapSupplement supplementFn (mapEssence essenceFn partialParser) =
-      mapEssenceAndSupplement essenceFn supplementFn partialParser
-"mapEssence/mapSupplement" [~2]
-  forall essenceFn supplementFn partialParser. 
-    mapEssence essenceFn (mapSupplement supplementFn partialParser) =
-      mapEssenceAndSupplement essenceFn supplementFn partialParser
-"*>/supplement" [~2]
-  forall p pp.
-    pp *> supplement p =
-      mapSupplement (*> p) pp
-"<*/supplement" [~2]
-  forall p pp.
-    pp <* supplement p =
-      mapEssenceAndSupplement ($> ()) (*> p) pp
+      essenceAndSupplement (p1 $> ()) p2
   #-}
 
 
-data Supplemented m a =
-  -- |
-  -- The essence and supplement.
-  Supplemented !(m a) (m ())
+newtype Supplemented m a =
+  Supplemented (m (a, m ()))
   deriving (Functor)
 
-instance Applicative m => Applicative (Supplemented m) where
+instance Monad m => Applicative (Supplemented m) where
   {-# INLINE pure #-}
   pure a =
-    Supplemented (pure a) (pure ())
+    Supplemented (return (a, return ()))
   {-# INLINABLE [2] (<*>) #-}
-  (<*>) (Supplemented essence1 supplement1) (Supplemented essence2 supplement2) =
-    Supplemented (essence1 <* supplement1 <*> essence2) supplement2
+  (<*>) (Supplemented m1) (Supplemented m2) =
+    Supplemented $
+    do
+      (result1, supplement1) <- m1
+      supplement1
+      (result2, supplement2) <- m2
+      return (result1 result2, supplement2)
 
-instance Alternative m => Alternative (Supplemented m) where
+instance MonadPlus m => Alternative (Supplemented m) where
   {-# INLINE empty #-}
   empty =
-    Supplemented empty (pure ())
+    Supplemented mzero
   {-# INLINABLE [2] (<|>) #-}
-  (<|>) (Supplemented essence1 supplement1) (Supplemented essence2 supplement2) =
-    Supplemented (essence1 <* supplement1 <|> essence2) supplement2
+  (<|>) (Supplemented m1) (Supplemented m2) =
+    Supplemented $
+    mplus m1 m2
 
--- |
--- Note that the binding operation moves the supplement into the essence,
--- thus defeating the point of this abstraction.
 instance Monad m => Monad (Supplemented m) where
   {-# INLINE return #-}
   return =
     pure
-  (>>=) (Supplemented essence1 supplement1) k =
-    Supplemented essence3 supplement3
-    where
-      essence3 =
-        do
-          a <- essence1
-          supplement1
-          case k a of
-            Supplemented essence2 supplement2 ->
-              essence2 <* supplement2
-      supplement3 =
-        pure ()
+  {-# INLINABLE (>>=) #-}
+  (>>=) (Supplemented m1) k2 =
+    Supplemented $
+    do
+      (result1, supplement1) <- m1
+      supplement1
+      case k2 result1 of
+        Supplemented m2 ->
+          m2
 
 instance MonadPlus m => MonadPlus (Supplemented m) where
   {-# INLINE mzero #-}
@@ -91,26 +65,16 @@ instance MonadPlus m => MonadPlus (Supplemented m) where
     (<|>)
 
 {-# INLINE [2] essence #-}
-essence :: Applicative m => m a -> Supplemented m a
+essence :: Monad m => m a -> Supplemented m a
 essence essence =
-  Supplemented essence (pure ())
+  Supplemented (fmap (\r -> (r, return ())) essence)
 
 {-# INLINE [2] supplement #-}
-supplement :: Applicative m => m () -> Supplemented m ()
+supplement :: Monad m => m () -> Supplemented m ()
 supplement supplement =
-  Supplemented (pure ()) supplement
+  Supplemented (return ((), supplement))
 
-{-# INLINE [2] mapEssence #-}
-mapEssence :: (m a -> m b) -> (Supplemented m a -> Supplemented m b)
-mapEssence fn (Supplemented essence supplement) =
-  Supplemented (fn essence) supplement
-
-{-# INLINE [2] mapSupplement #-}
-mapSupplement :: (m () -> m ()) -> (Supplemented m a -> Supplemented m a)
-mapSupplement fn (Supplemented essence supplement) =
-  Supplemented essence (fn supplement)
-
-{-# INLINABLE [2] mapEssenceAndSupplement #-}
-mapEssenceAndSupplement :: (m a -> m b) -> (m () -> m ()) -> (Supplemented m a -> Supplemented m b)
-mapEssenceAndSupplement essenceFn supplementFn (Supplemented essence supplement) =
-  Supplemented (essenceFn essence) (supplementFn supplement)
+{-# INLINE [2] essenceAndSupplement #-}
+essenceAndSupplement :: Monad m => m a -> m () -> Supplemented m a
+essenceAndSupplement essence supplement =
+  Supplemented (fmap (\r -> (r, supplement)) essence)
