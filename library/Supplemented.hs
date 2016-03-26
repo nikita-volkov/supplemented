@@ -73,7 +73,7 @@ supplement supplement =
   Supplemented (pure ()) supplement
 
 {-# INLINE [2] mapEssence #-}
-mapEssence :: (m a -> m a) -> (Supplemented m a -> Supplemented m a)
+mapEssence :: (m a -> m b) -> (Supplemented m a -> Supplemented m b)
 mapEssence fn (Supplemented essence supplement) =
   Supplemented (fn essence) supplement
 
@@ -83,6 +83,6 @@ mapSupplement fn (Supplemented essence supplement) =
   Supplemented essence (fn supplement)
 
 {-# INLINABLE [2] mapEssenceAndSupplement #-}
-mapEssenceAndSupplement :: (m a -> m a) -> (m () -> m ()) -> (Supplemented m a -> Supplemented m a)
+mapEssenceAndSupplement :: (m a -> m b) -> (m () -> m ()) -> (Supplemented m a -> Supplemented m b)
 mapEssenceAndSupplement essenceFn supplementFn (Supplemented essence supplement) =
   Supplemented (essenceFn essence) (supplementFn supplement)
