@@ -62,6 +62,34 @@ instance Alternative m => Alternative (Supplemented m) where
   (<|>) (Supplemented essence1 supplement1) (Supplemented essence2 supplement2) =
     Supplemented (essence1 <* supplement1 <|> essence2) supplement2
 
+-- |
+-- Note that the binding operation moves the supplement into the essence,
+-- thus defeating the point of this abstraction.
+instance Monad m => Monad (Supplemented m) where
+  {-# INLINE return #-}
+  return =
+    pure
+  (>>=) (Supplemented essence1 supplement1) k =
+    Supplemented essence3 supplement3
+    where
+      essence3 =
+        do
+          a <- essence1
+          supplement1
+          case k a of
+            Supplemented essence2 supplement2 ->
+              essence2 <* supplement2
+      supplement3 =
+        pure ()
+
+instance MonadPlus m => MonadPlus (Supplemented m) where
+  {-# INLINE mzero #-}
+  mzero =
+    empty
+  {-# INLINE mplus #-}
+  mplus =
+    (<|>)
+
 {-# INLINE [2] essence #-}
 essence :: Applicative m => m a -> Supplemented m a
 essence essence =
