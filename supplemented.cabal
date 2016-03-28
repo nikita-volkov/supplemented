@@ -1,7 +1,7 @@
 name:
   supplemented
 version:
-  0.2.1
+  0.2.2
 synopsis:
   Attoparsec extension for early termination
 description:
@@ -49,4 +49,5 @@ library
     -- 
     attoparsec >= 0.13 && < 0.14,
     -- 
+    transformers >= 0.4 && < 0.6,
     base-prelude < 2

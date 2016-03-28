@@ -72,6 +72,11 @@ instance MonadPlus m => MonadPlus (Supplemented m) where
   mplus =
     (<|>)
 
+instance MonadTrans Supplemented where
+  {-# INLINE lift #-}
+  lift =
+    essence
+
 {-# INLINE [2] essence #-}
 essence :: Monad m => m a -> Supplemented m a
 essence essence =
