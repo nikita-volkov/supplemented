@@ -77,6 +77,11 @@ instance MonadTrans Supplemented where
   lift =
     essence
 
+{-# INLINE runSupplemented #-}
+runSupplemented :: Supplemented m a -> m (a, m ())
+runSupplemented (Supplemented impl) =
+  impl
+
 {-# INLINE [2] essence #-}
 essence :: Monad m => m a -> Supplemented m a
 essence essence =
