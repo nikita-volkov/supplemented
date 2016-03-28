@@ -1,4 +1,12 @@
 module Supplemented
+(
+  Supplemented,
+  runSupplemented,
+  essence,
+  supplement,
+  essenceAndSupplement,
+  mapSupplement,
+)
 where
 
 import Supplemented.Prelude

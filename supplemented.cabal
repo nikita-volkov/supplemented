@@ -1,7 +1,7 @@
 name:
   supplemented
 version:
-  0.2.3
+  0.3
 synopsis:
   Attoparsec extension for early termination
 description:
