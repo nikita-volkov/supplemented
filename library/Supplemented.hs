@@ -53,6 +53,7 @@ instance Monad m => Applicative (Supplemented m) where
     Supplemented (Left (a, pure ()))
   {-# INLINABLE [2] (<*>) #-}
   (<*>) (Supplemented either1) (Supplemented either2) =
+    {-# SCC "(<*>)" #-} 
     Supplemented either3
     where
       either3 =
@@ -85,6 +86,7 @@ instance MonadPlus m => Alternative (Supplemented m) where
     Supplemented (Right mzero)
   {-# INLINABLE [2] (<|>) #-}
   (<|>) (Supplemented either1) (Supplemented either2) =
+    {-# SCC "(<|>)" #-} 
     Supplemented either3
     where
       either3 =
@@ -99,6 +101,7 @@ instance Monad m => Monad (Supplemented m) where
     pure
   {-# INLINABLE (>>=) #-}
   (>>=) (Supplemented either1) k2 =
+    {-# SCC "(>>=)" #-} 
     Supplemented either3
     where
       either3 =
