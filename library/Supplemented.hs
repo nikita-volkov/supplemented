@@ -64,13 +64,13 @@ instance Monad m => Applicative (Supplemented m) where
                 Left (result1 result2, supplement1 *> supplement2)
               Right m2 ->
                 Right $
-                fmap (\(result2, supplement2) -> (result1 result2, supplement2)) $
+                liftM (\(result2, supplement2) -> (result1 result2, supplement2)) $
                 supplement1 *> m2
           Right m1 ->
             case either2 of
               Left (result2, supplement2) ->
                 Right $
-                fmap (\(result1, supplement1) -> (result1 result2, supplement1 *> supplement2)) $
+                liftM (\(result1, supplement1) -> (result1 result2, supplement1 *> supplement2)) $
                 m1
               Right m2 ->
                 Right $
@@ -150,7 +150,7 @@ runSupplemented (Supplemented either1) =
 {-# INLINE [2] essence #-}
 essence :: Monad m => m a -> Supplemented m a
 essence essence =
-  Supplemented (Right (fmap (\r -> (r, return ())) essence))
+  Supplemented (Right (liftM (\r -> (r, return ())) essence))
 
 {-# INLINE [2] supplement #-}
 supplement :: Monad m => m () -> Supplemented m ()
@@ -160,7 +160,7 @@ supplement supplement =
 {-# INLINE [2] essenceAndSupplement #-}
 essenceAndSupplement :: Monad m => m a -> m () -> Supplemented m a
 essenceAndSupplement essence supplement =
-  Supplemented (Right (fmap (\r -> (r, supplement)) essence))
+  Supplemented (Right (liftM (\r -> (r, supplement)) essence))
 
 {-# INLINE [2] mapSupplement #-}
 mapSupplement :: Monad m => (m () -> m ()) -> Supplemented m a -> Supplemented m a
@@ -171,5 +171,5 @@ mapSupplement mapping (Supplemented either1) =
       Left (result1, mapping supplement1)
     Right m1 ->
       Right $
-      fmap (\(result1, supplement1) -> (result1, mapping supplement1)) $
+      liftM (\(result1, supplement1) -> (result1, mapping supplement1)) $
       m1
