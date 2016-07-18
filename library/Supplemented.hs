@@ -18,15 +18,15 @@ import Supplemented.Prelude
 "essence/supplement/*>" [~2]
   forall p1 p2.
     essence p1 *> supplement p2 =
-      essenceAndSupplement (p1 $> ()) p2
+      essenceAndSupplement (do p1; return ()) p2
 "*>/supplement" [~2]
   forall p pp.
     pp *> supplement p =
-      mapSupplement (*> p) pp $> ()
+      mapSupplement (>> p) pp >> return ()
 "<*/supplement" [~2]
   forall p pp.
     pp <* supplement p =
-      mapSupplement (*> p) pp
+      mapSupplement (>> p) pp
   #-}
 
 
@@ -50,7 +50,7 @@ instance Functor m => Functor (Supplemented m) where
 instance Monad m => Applicative (Supplemented m) where
   {-# INLINE pure #-}
   pure a =
-    Supplemented (Left (a, pure ()))
+    Supplemented (Left (a, return ()))
   {-# INLINABLE [2] (<*>) #-}
   (<*>) (Supplemented either1) (Supplemented either2) =
     {-# SCC "(<*>)" #-} 
@@ -61,16 +61,16 @@ instance Monad m => Applicative (Supplemented m) where
           Left (result1, supplement1) ->
             case either2 of
               Left (result2, supplement2) ->
-                Left (result1 result2, supplement1 *> supplement2)
+                Left (result1 result2, supplement1 >> supplement2)
               Right m2 ->
                 Right $
                 liftM (\(result2, supplement2) -> (result1 result2, supplement2)) $
-                supplement1 *> m2
+                supplement1 >> m2
           Right m1 ->
             case either2 of
               Left (result2, supplement2) ->
                 Right $
-                liftM (\(result1, supplement1) -> (result1 result2, supplement1 *> supplement2)) $
+                liftM (\(result1, supplement1) -> (result1 result2, supplement1 >> supplement2)) $
                 m1
               Right m2 ->
                 Right $
@@ -93,12 +93,12 @@ instance MonadPlus m => Alternative (Supplemented m) where
         Right (mplus (m either1) (m either2))
         where
           m =
-            either (\(result, supplement) -> (result, return ()) <$ supplement) id
+            either (\(result, supplement) -> supplement >> return (result, return ())) id
 
 instance Monad m => Monad (Supplemented m) where
   {-# INLINE return #-}
   return =
-    pure
+    return
   {-# INLINABLE (>>=) #-}
   (>>=) (Supplemented either1) k2 =
     {-# SCC "(>>=)" #-} 
@@ -111,9 +111,9 @@ instance Monad m => Monad (Supplemented m) where
               Supplemented either2 ->
                 case either2 of
                   Left (result2, supplement2) ->
-                    Left (result2, supplement1 *> supplement2)
+                    Left (result2, supplement1 >> supplement2)
                   Right m2 ->
-                    Right (supplement1 *> m2)
+                    Right (supplement1 >> m2)
           Right m1 ->
             Right $
             do
@@ -122,7 +122,7 @@ instance Monad m => Monad (Supplemented m) where
                 Supplemented either2 ->
                   case either2 of
                     Left (result2, supplement2) ->
-                      return (result2, supplement1 *> supplement2)
+                      return (result2, supplement1 >> supplement2)
                     Right m2 ->
                       do
                         supplement1
